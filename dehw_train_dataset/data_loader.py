@@ -86,8 +86,6 @@ class TrainDataSet(paddle.io.Dataset):
 
         return inputImage, groundTruth, maskIn
 
-
-# 验证数据集
 class ValidDataSet(paddle.io.Dataset):
     def __init__(self, file_path=None):
         super().__init__()
