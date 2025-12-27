@@ -3,7 +3,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from .custom_layers import get_pad,CustomConv2D, CustomDeConv2D,AdvancedConv2D,AdvancedDeConv2D
 from .component import Multi_cloblock,ImprovedConvFFN,SFusionModule
-from paddle.nn import Conv2D, BatchNorm2D, ReLU6, AdaptiveAvgPool2D, Dropout
+from paddle.nn import Conv2D, BatchNorm2D,AdaptiveAvgPool2D
 
 class Residual(nn.Layer):
     def __init__(self, inp, oup, stride, expand_ratio, keep_3x3=False):
@@ -162,6 +162,7 @@ class ScanEraserNet(nn.Layer):
                     )
 
             self.__setattr__(f'stage{i}', nn.LayerList(layers))
+
 
     def forward(self, x):
         x = self.conv1(x)

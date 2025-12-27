@@ -56,7 +56,7 @@ class LossL1(nn.Layer):
     def __init__(self):
         super(LossL1, self).__init__()
         self.l1 = nn.L1Loss()
-        self.extractor = pre_network(pretrained='vgg.pdparams')#vgg
+        self.extractor = pre_network(pretrained='vgg.pdparams')
         self.discriminator = Discriminator_STE(3)
         self.D_optimizer = paddle.optimizer.Adam(learning_rate=0.00001,
                                                  parameters=self.discriminator.parameters(),
