@@ -1,17 +1,12 @@
-# 可视化
 from visualdl import LogWriter
 import os
-# paddle包
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.io import DataLoader
 from dehw_train_dataset.data_loader import TrainDataSet, ValidDataSet
 from loss.losses import LossWithGAN_STE
-# 使用SwinT增强的Erasenet
-from network.new_ScanEraser import ScanEraser_xxs1
-
-# 其他工具
+from network.new_ScanEraser import ScanEraser
 import utils
 import random
 from PIL import Image
@@ -19,8 +14,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-
-# 计算psnr
 log = LogWriter('log')
 def psnr(img1, img2):
    mse = np.mean((img1/1.0 - img2/1.0) ** 2 )
@@ -28,10 +21,8 @@ def psnr(img1, img2):
       return 100
    return 10 * math.log10(255.0**2/mse)
 
-
-# 训练配置字典
 CONFIG = {
-    'modelsSavePath': 'swin_ScanEraser',
+    'modelsSavePath': '',
     'batchSize': 16,
     'traindataRoot': 'dehw_train_dataset',
     'validdataRoot': 'work',
@@ -40,14 +31,11 @@ CONFIG = {
     'seed': 3971
 }
 
-
-# 设置随机种子
 random.seed(CONFIG['seed'])
 np.random.seed(CONFIG['seed'])
 paddle.seed(CONFIG['seed'])
 # noinspection PyProtectedMember
 paddle.framework.random._manual_program_seed(CONFIG['seed'])
-
 
 batchSize = CONFIG['batchSize']
 if not os.path.exists(CONFIG['modelsSavePath']):
@@ -56,14 +44,13 @@ if not os.path.exists(CONFIG['modelsSavePath']):
 traindataRoot = CONFIG['traindataRoot']
 validdataRoot = CONFIG['validdataRoot']
 
-# 创建数据集容器
 TrainData = TrainDataSet(training=True, file_path=traindataRoot)
 TrainDataLoader = DataLoader(TrainData, batch_size=batchSize, shuffle=True,
                              num_workers=0, drop_last=True)
 ValidData = ValidDataSet(file_path=validdataRoot)
 ValidDataLoader = DataLoader(ValidData, batch_size=1, shuffle=True, num_workers=0, drop_last=True)
 
-netG = ScanEraser_xxs1()
+netG = ScanEraser()
 
 if CONFIG['pretrained'] is not None:
     print('loaded ')
@@ -74,8 +61,7 @@ lr = 1e-3
 decay_factor = 0.8
 
 G_optimizer = paddle.optimizer.Adam(learning_rate=lr, parameters=netG.parameters())
-criterion = LossWithGAN_STE()
-# loss_function = LossWithGAN_STE()
+criterion = LossL1()
 
 print('OK!')
 num_epochs = CONFIG['num_epochs']
@@ -102,16 +88,11 @@ for epoch_id in range(1, num_epochs + 1):
         G_optimizer.step()
         G_optimizer.clear_grad()
         if iters % 100 == 0:
-            # print('epoch{}, iters{}, loss:{:.5f}, lr:{}'.format(
-            #     epoch_id, iters, G_loss.item(), G_optimizer.get_lr()
-            # ))
             log.add_scalar(tag="train_loss", step=iters, value=G_loss.item())
 
     netG.eval()
     val_psnr = 0
     val_psnr1 = 0
-
-    # noinspection PyAssignmentToLoopOrWithParameter
     for index, (imgs, gt) in enumerate(ValidDataLoader):
         _, _, h, w = imgs.shape
         rh, rw = h, w
@@ -150,7 +131,6 @@ for epoch_id in range(1, num_epochs + 1):
         res = res[:, :, :rh, :rw]
         res1 = res1[:, :, :rh, :rw]
 
-        # 改变通道
         output = utils.pd_tensor2img(res)
         output1 = utils.pd_tensor2img(res1)
         target = utils.pd_tensor2img(gt)
@@ -158,18 +138,6 @@ for epoch_id in range(1, num_epochs + 1):
 
         psnr_value = psnr(output, target)
         psnr_value1 = psnr(output1, target)
-        # print('psnr: ', psnr_value)
-
-        # if index in [2, 3]:
-        #     fig = plt.figure(figsize=(20, 10),dpi=100)
-        #     # 图一
-        #     ax1 = fig.add_subplot(2, 2, 1)  # 1行 2列 索引为1
-        #     ax1.imshow(output)
-        #     # 图二
-        #     ax2 = fig.add_subplot(2, 2, 2)
-        #     ax2.imshow(mm_in)
-
-        #     plt.show()
 
         del res
         del gt
@@ -180,12 +148,8 @@ for epoch_id in range(1, num_epochs + 1):
         val_psnr1 +=psnr_value1
     ave_psnr = val_psnr / (index + 1)
     ave_psnr1 = val_psnr1 / (index + 1)
-    # print('epoch:{}, psnr:{}'.format(epoch_id, ave_psnr))
     print('epoch:{}, psnr:{}, psnr1:{}'.format(epoch_id, ave_psnr,ave_psnr1))
     log.add_scalar(tag="valid_psnr", step=epoch_id, value=ave_psnr)
-    # paddle.save(netG.state_dict(), CONFIG['modelsSavePath'] +
-    #             '/STE_{}_{:.4f}.pdparams'.format(epoch_id, ave_psnr
-    #             ))
     if ave_psnr > best_psnr:
         best_psnr = ave_psnr
-        paddle.save(netG.state_dict(), CONFIG['modelsSavePath'] + '/STE_best.pdparams')
+        paddle.save(netG.state_dict(), CONFIG['modelsSavePath'] + '/STE_best.pdparams')'/STE_best.pdparams')
