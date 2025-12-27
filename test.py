@@ -6,14 +6,14 @@ import json
 import cv2
 import paddle
 import paddle.nn as nn
-from network.new_ScanEraser import ScanEraser_xxs1
+from network.new_ScanEraser import ScanEraser
 import utils
 from paddle.vision.transforms import Compose, ToTensor
 from PIL import Image
 
 # 加载我们训练到的最好的模型
-netG = ScanEraser_xxs1()
-weights = paddle.load('')
+netG = ScanEraser()
+weights = paddle.load('42.91.pdparams')
 netG.load_dict(weights)
 netG.eval()
 print("ok")
@@ -27,7 +27,7 @@ ImgTrans = ImageTransform()
 
 
 def process(src_image_dir, save_dir):
-    image_paths = glob.glob(os.path.join(src_image_dir, "*.png"))
+    image_paths = glob.glob(os.path.join(src_image_dir, "*.jpg"))
     for image_path in image_paths:
 
         # do something
@@ -70,7 +70,7 @@ def process(src_image_dir, save_dir):
 
 
 if __name__ == "__main__":
-    sys.argv = ["script.py", "work/test_image", "work/test_output"]
+    sys.argv = ["script.py", "test/test_image", "test/test_output"]
     assert len(sys.argv) == 3
 
     src_image_dir = sys.argv[1]
