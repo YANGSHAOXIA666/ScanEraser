@@ -11,9 +11,8 @@ import utils
 from paddle.vision.transforms import Compose, ToTensor
 from PIL import Image
 
-# 加载我们训练到的最好的模型
 netG = ScanEraser()
-weights = paddle.load('42.91.pdparams')
+weights = paddle.load('')
 netG.load_dict(weights)
 netG.eval()
 print("ok")
@@ -58,12 +57,9 @@ def process(src_image_dir, save_dir):
                 mm = mm.cpu()
                 clip = clip.cpu()
                 g_image_clip_with_mask = x * mm + clip * (1 - mm)
-                # g_image_clip_with_mask = x
                 res[:, :, i:i + step, j:j + step] = g_image_clip_with_mask
-                # del g_image_clip_with_mask, g_images_clip, mm, clip
         res = res[:, :, :rh, :rw]
         output = utils.pd_tensor2img(res)
-        # 保存结果图片
         save_path = os.path.join(save_dir, os.path.basename(image_path).replace(".jpg", ".png"))
         cv2.imwrite(save_path, output)
         del output, res
